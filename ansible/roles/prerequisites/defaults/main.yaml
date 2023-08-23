@@ -1,0 +1,7 @@
+---
+# Defaults for prerequisites
+packages:
+  - jq
+  - awscli
+  - unzip
+  - openjdk-11-jre-headless

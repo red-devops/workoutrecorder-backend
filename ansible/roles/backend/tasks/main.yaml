@@ -1,0 +1,64 @@
+---
+# Task file for workoutrecorder backend
+- name: Render script
+  template:
+    src: "{{ item }}"
+    dest: "{{ item }}"
+    mode: "{{ mode }}"
+  delegate_to: localhost
+  with_items:
+    - "get_db_endpoint.sh"
+    - "get_db_properties.sh"
+
+- name: Get db endpoint form consul
+  command: "./get_db_endpoint.sh"
+  register: db_endpoint_output
+  delegate_to: localhost
+
+- name: Set db_endpoint variable
+  set_fact:
+    db_endpoint: "{{ db_endpoint_output.stdout }}"
+
+- name: Get db properties from vault 
+  command: "./get_db_properties.sh"
+  register: db_properties_output
+  delegate_to: localhost
+
+- name: Set db_username variable
+  set_fact:
+    db_username: "{{ db_properties_output.stdout | from_json | json_query('username') }}"
+
+- name: Set db_password variable
+  set_fact:
+    db_password: "{{ db_properties_output.stdout | from_json | json_query('password') }}"
+
+- name: Copy artifact app {{ app }}
+  copy:
+    src: workoutrecorder-backend-{{ app_version }}.jar
+    dest: "{{ app_bin_home }}"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: "{{ mode }}"
+  
+- name: Copy application.properties
+  template:
+    src: "application.properties"
+    dest: "{{ app_bin_home }}/application.properties"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: "{{ mode }}"
+
+- name: Copy systemd backend.service
+  template:
+    src: "backend.service"
+    dest: "/usr/lib/systemd/system/backend.service"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: "{{ mode }}"
+  
+- name: Start {{ app }} agent
+  systemd:
+    name: "{{ app }}"
+    state: restarted
+    daemon_reload: yes
+    enabled: yes

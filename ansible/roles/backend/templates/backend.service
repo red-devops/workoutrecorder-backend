@@ -1,0 +1,16 @@
+[Unit]
+Description="Backend java service"
+Requires=network-online.target
+After=network-online.target
+ 
+[Service]
+Restart=on-failure
+PermissionsStartOnly=true
+ExecStart=/bin/sh -c 'exec java -jar {{ app_bin_home }}/workoutrecorder-{{ app }}-{{ app_version }}.jar --spring.config.location={{ app_bin_home }}/application.properties >> {{ app_log_home }}/backend.log 2>&1'
+ExecReload=/bin/kill -HUP $MAINPID
+KillSignal=SIGTERM
+User={{ user }}
+Group={{ group }}
+ 
+[Install]
+WantedBy=multi-user.target
